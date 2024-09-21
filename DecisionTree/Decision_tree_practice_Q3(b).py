@@ -84,13 +84,11 @@ def information_gain(data, attribute, label_index, threshold=None):
     weighted_entropy = 0
     
     if threshold is not None:
-        # Binary split for numerical attributes
         left_subset = [row for row in data if row[attribute] <= threshold]
         right_subset = [row for row in data if row[attribute] > threshold]
         weighted_entropy = (len(left_subset) / len(data)) * entropy(left_subset, label_index) + \
                            (len(right_subset) / len(data)) * entropy(right_subset, label_index)
     else:
-        # Categorical split
         for value in set(row[attribute] for row in data):
             subset = [row for row in data if row[attribute] == value]
             weight = len(subset) / len(data)
@@ -103,14 +101,12 @@ def majority_error(data, attribute, label_index, threshold=None):
     weighted_error = 0
     
     if threshold is not None:
-        # Binary split for numerical attributes
         left_subset = [row for row in data if row[attribute] <= threshold]
         right_subset = [row for row in data if row[attribute] > threshold]
         left_error = 1 - max(Counter(row[label_index] for row in left_subset).values()) / len(left_subset) if left_subset else 0
         right_error = 1 - max(Counter(row[label_index] for row in right_subset).values()) / len(right_subset) if right_subset else 0
         weighted_error = (len(left_subset) / len(data)) * left_error + (len(right_subset) / len(data)) * right_error
     else:
-        # Categorical split
         for value in set(row[attribute] for row in data):
             subset = [row for row in data if row[attribute] == value]
             weight = len(subset) / len(data)
@@ -130,13 +126,11 @@ def gini_index(data, attribute, label_index, threshold=None):
     weighted_gini = 0
     
     if threshold is not None:
-        # Binary split for numerical attributes
         left_subset = [row for row in data if row[attribute] <= threshold]
         right_subset = [row for row in data if row[attribute] > threshold]
         weighted_gini = (len(left_subset) / len(data)) * calculate_gini(left_subset) + \
                         (len(right_subset) / len(data)) * calculate_gini(right_subset)
     else:
-        # Categorical split
         for value in set(row[attribute] for row in data):
             subset = [row for row in data if row[attribute] == value]
             weight = len(subset) / len(data)
@@ -211,17 +205,14 @@ def run_experiment(train_data, test_data, max_depths, criteria):
     
     return results
 
-# Load and preprocess data
 train_data = load_data('train_bank.csv')
 test_data = load_data('test_bank.csv')
 train_data, test_data = replace_unknown(train_data, test_data)
 
-# Run experiment
 max_depths = range(1, 17)
 criteria = ['info_gain', 'majority_error', 'gini_index']
 results = run_experiment(train_data, test_data, max_depths, criteria)
 
-# Print results
 print("Depth | Information Gain | Majority Error | Gini Index")
 print("      | Train  | Test    | Train  | Test   | Train | Test")
 print("------|--------|---------|--------|--------|-------|------")

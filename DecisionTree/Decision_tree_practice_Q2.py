@@ -116,16 +116,13 @@ def run_experiment(train_data, test_data, max_depths, criteria):
     
     return results
 
-# Load data
 train_data = load_data('train.csv')
 test_data = load_data('test.csv')
 
-# Run experiment
 max_depths = range(1, 7)
 criteria = ['info_gain', 'majority_error', 'gini_index']
 results = run_experiment(train_data, test_data, max_depths, criteria)
 
-# Print results
 print("Depth | Information Gain | Majority Error | Gini Index")
 print("      | Train  | Test    | Train  | Test   | Train | Test")
 print("------|--------|---------|--------|--------|-------|------")

@@ -13,7 +13,7 @@ class Node:
 def id3(data, attributes, label_index, max_depth, criterion='info_gain'):
     labels = [row[label_index] for row in data]
     
-    if not labels:  # Handle empty dataset
+    if not labels: 
         return Node(label=None)
     
     if len(set(labels)) == 1:
@@ -25,7 +25,6 @@ def id3(data, attributes, label_index, max_depth, criterion='info_gain'):
     node = Node(attribute=best_attribute, threshold=threshold)
     
     if threshold is not None:
-        # Binary split for numerical attributes
         left_subset = [row for row in data if row[best_attribute] <= threshold]
         right_subset = [row for row in data if row[best_attribute] > threshold]
         if left_subset:
@@ -33,13 +32,12 @@ def id3(data, attributes, label_index, max_depth, criterion='info_gain'):
         if right_subset:
             node.branches[f">{threshold}"] = id3(right_subset, attributes, label_index, max_depth - 1, criterion)
     else:
-        # Categorical split
         for value in set(row[best_attribute] for row in data):
             subset = [row for row in data if row[best_attribute] == value]
             if subset:
                 node.branches[value] = id3(subset, attributes, label_index, max_depth - 1, criterion)
     
-    if not node.branches:  # If no branches were created, make this a leaf node
+    if not node.branches: 
         return Node(label=max(set(labels), key=labels.count))
     
     return node
@@ -51,12 +49,10 @@ def choose_best_attribute(data, attributes, label_index, criterion):
     
     for attribute in attributes:
         if all(isinstance(row[attribute], (int, float)) for row in data):
-            # Numerical attribute
             values = [row[attribute] for row in data]
             threshold = statistics.median(values)
             gain = calculate_gain(data, attribute, label_index, criterion, threshold)
         else:
-            # Categorical attribute
             gain = calculate_gain(data, attribute, label_index, criterion)
             threshold = None
         
@@ -88,13 +84,11 @@ def information_gain(data, attribute, label_index, threshold=None):
     weighted_entropy = 0
     
     if threshold is not None:
-        # Binary split for numerical attributes
         left_subset = [row for row in data if row[attribute] <= threshold]
         right_subset = [row for row in data if row[attribute] > threshold]
         weighted_entropy = (len(left_subset) / len(data)) * entropy(left_subset, label_index) + \
                            (len(right_subset) / len(data)) * entropy(right_subset, label_index)
     else:
-        # Categorical split
         for value in set(row[attribute] for row in data):
             subset = [row for row in data if row[attribute] == value]
             weight = len(subset) / len(data)
@@ -107,14 +101,12 @@ def majority_error(data, attribute, label_index, threshold=None):
     weighted_error = 0
     
     if threshold is not None:
-        # Binary split for numerical attributes
         left_subset = [row for row in data if row[attribute] <= threshold]
         right_subset = [row for row in data if row[attribute] > threshold]
         left_error = 1 - max(Counter(row[label_index] for row in left_subset).values()) / len(left_subset) if left_subset else 0
         right_error = 1 - max(Counter(row[label_index] for row in right_subset).values()) / len(right_subset) if right_subset else 0
         weighted_error = (len(left_subset) / len(data)) * left_error + (len(right_subset) / len(data)) * right_error
     else:
-        # Categorical split
         for value in set(row[attribute] for row in data):
             subset = [row for row in data if row[attribute] == value]
             weight = len(subset) / len(data)
@@ -134,13 +126,11 @@ def gini_index(data, attribute, label_index, threshold=None):
     weighted_gini = 0
     
     if threshold is not None:
-        # Binary split for numerical attributes
         left_subset = [row for row in data if row[attribute] <= threshold]
         right_subset = [row for row in data if row[attribute] > threshold]
         weighted_gini = (len(left_subset) / len(data)) * calculate_gini(left_subset) + \
                         (len(right_subset) / len(data)) * calculate_gini(right_subset)
     else:
-        # Categorical split
         for value in set(row[attribute] for row in data):
             subset = [row for row in data if row[attribute] == value]
             weight = len(subset) / len(data)
@@ -151,7 +141,7 @@ def gini_index(data, attribute, label_index, threshold=None):
 def predict(node, instance):
     if node.label is not None:
         return node.label
-    if node.attribute >= len(instance):  # Handle case where attribute is out of range
+    if node.attribute >= len(instance): 
         return None
     value = instance[node.attribute]
     if node.threshold is not None:
@@ -162,7 +152,7 @@ def predict(node, instance):
     else:
         branch = value
     if branch not in node.branches:
-        return None  # Return None if we can't make a prediction
+        return None 
     return predict(node.branches[branch], instance)
 
 def load_data(filename):
@@ -173,10 +163,8 @@ def load_data(filename):
             instance = []
             for value in row:
                 try:
-                    # Try to convert to float (for numerical attributes)
                     instance.append(float(value))
                 except ValueError:
-                    # If conversion fails, treat as categorical
                     instance.append(value)
             data.append(instance)
     return data
@@ -188,7 +176,7 @@ def calculate_error(tree, data, label_index):
 def run_experiment(train_data, test_data, max_depths, criteria):
     num_attributes = len(train_data[0]) - 1
     attributes = list(range(num_attributes))
-    label_index = -1  # Assume the last column is the label
+    label_index = -1 
     
     results = {criterion: {depth: {'train': 0, 'test': 0} for depth in max_depths} for criterion in criteria}
     
@@ -202,16 +190,13 @@ def run_experiment(train_data, test_data, max_depths, criteria):
     
     return results
 
-# Load data
 train_data = load_data('train_bank.csv')
 test_data = load_data('test_bank.csv')
 
-# Run experiment
 max_depths = range(1, 17)
 criteria = ['info_gain', 'majority_error', 'gini_index']
 results = run_experiment(train_data, test_data, max_depths, criteria)
 
-# Print results
 print("Depth | Information Gain | Majority Error | Gini Index")
 print("      | Train  | Test    | Train  | Test   | Train | Test")
 print("------|--------|---------|--------|--------|-------|------")
