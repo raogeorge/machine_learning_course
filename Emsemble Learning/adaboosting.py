@@ -1,26 +1,5 @@
 import numpy as np
-import pandas as pd
 import matplotlib.pyplot as plt
-
-# Suppress warnings
-import warnings
-warnings.filterwarnings('ignore')
-
-def load_data(filename):
-    # Load the data
-    data = pd.read_csv(filename)
-    
-    # Separate features and target
-    X = data.iloc[:, :-1]
-    y = data.iloc[:, -1]
-    
-    # Convert categorical variables to numerical
-    X = pd.get_dummies(X, drop_first=True)
-    
-    # Convert y to -1 and 1
-    y = (y == 'yes').astype(int) * 2 - 1
-    
-    return X.values, y.values
 
 class DecisionStump:
     def __init__(self):
@@ -51,6 +30,11 @@ def build_stump(X, y, weights):
 
             error = np.sum(weights * (predictions != y))
 
+            if error > 0.5:
+                error = 1 - error
+                left_prediction *= -1
+                right_prediction *= -1
+
             if error < min_error:
                 min_error = error
                 best_stump.feature_index = feature
@@ -68,32 +52,40 @@ def stump_predict(X, stump):
     predictions[~left_mask] = stump.right_prediction
     return predictions
 
-def adaboost(X, y, T):
+def adaboost(X, y, X_test, y_test, T):
     n_samples, n_features = X.shape
     weights = np.ones(n_samples) / n_samples
     
     stumps = []
-    stump_errors = []
+    weighted_train_errors = []
+    unweighted_train_errors = []
+    test_errors = []
     
     for t in range(T):
-        stump, error = build_stump(X, y, weights)
+        stump, weighted_error = build_stump(X, y, weights)
         
-        error = np.clip(error, 1e-15, 1 - 1e-15)
+        weighted_error = np.clip(weighted_error, 1e-15, 1 - 1e-15)
         
-        stump.alpha = 0.5 * np.log((1 - error) / error)
+        stump.alpha = 0.5 * np.log((1 - weighted_error) / weighted_error)
         
         predictions = stump_predict(X, stump)
         weights *= np.exp(-stump.alpha * y * predictions)
         weights /= np.sum(weights)
         
         stumps.append(stump)
-        stump_errors.append(error)
+        
+        weighted_train_errors.append(weighted_error)
+        unweighted_train_error = np.mean(predictions != y)
+        unweighted_train_errors.append(unweighted_train_error)
+        
+        test_error = np.mean(stump_predict(X_test, stump) != y_test)
+        test_errors.append(test_error)
         
         if t % 10 == 0:
-            train_error = np.mean(adaboost_predict(X, stumps) != y)
-            print(f"Iteration {t+1}/{T}, Train Error: {train_error:.4f}")
+            print(f"Iteration {t+1}/{T}, Weighted Train Error: {weighted_error:.4f}, "
+                  f"Unweighted Train Error: {unweighted_train_error:.4f}, Test Error: {test_error:.4f}")
     
-    return stumps, stump_errors
+    return stumps, weighted_train_errors, unweighted_train_errors, test_errors
 
 def adaboost_predict(X, stumps):
     n_samples = X.shape[0]
@@ -102,20 +94,35 @@ def adaboost_predict(X, stumps):
         predictions += stump.alpha * stump_predict(X, stump)
     return np.sign(predictions)
 
+def load_data(filename):
+    data = np.genfromtxt(filename, delimiter=',', dtype=str)
+    
+    X = data[:, :-1]
+    y = data[:, -1]
+    
+    X_encoded = np.zeros(X.shape, dtype=float)
+    for i in range(X.shape[1]):
+        try:
+            X_encoded[:, i] = X[:, i].astype(float)
+        except ValueError:
+            unique_values = np.unique(X[:, i])
+            X_encoded[:, i] = np.array([np.where(unique_values == val)[0][0] for val in X[:, i]])
+    
+    y = (y == 'yes').astype(int) * 2 - 1
+    
+    return X_encoded, y
+
 # Load and preprocess data
 X_train, y_train = load_data('train_bank.csv')
 X_test, y_test = load_data('test_bank.csv')
 
-print(f"Training data shape: {X_train.shape}")
-print(f"Test data shape: {X_test.shape}")
-
 # Run AdaBoost
 T = 500
-stumps, stump_errors = adaboost(X_train, y_train, T)
+stumps, weighted_train_errors, unweighted_train_errors, test_errors = adaboost(X_train, y_train, X_test, y_test, T)
 
-# Calculate errors
-train_errors = []
-test_errors = []
+# Calculate ensemble errors
+train_ensemble_errors = []
+test_ensemble_errors = []
 
 for t in range(1, T + 1):
     train_preds = adaboost_predict(X_train, stumps[:t])
@@ -124,28 +131,42 @@ for t in range(1, T + 1):
     train_error = np.mean(train_preds != y_train)
     test_error = np.mean(test_preds != y_test)
     
-    train_errors.append(train_error)
-    test_errors.append(test_error)
+    train_ensemble_errors.append(train_error)
+    test_ensemble_errors.append(test_error)
     
     if t % 50 == 0:
-        print(f"Iteration {t}, Train Error: {train_error:.4f}, Test Error: {test_error:.4f}")
+        print(f"Iteration {t}, Train Ensemble Error: {train_error:.4f}, Test Ensemble Error: {test_error:.4f}")
 
 # Plot results
 plt.figure(figsize=(12, 5))
 
+# First figure: training and test errors of the ensemble varying along with T
 plt.subplot(1, 2, 1)
-plt.plot(range(1, T + 1), train_errors, label='Training Error')
-plt.plot(range(1, T + 1), test_errors, label='Test Error')
-plt.xlabel('Number of Iterations (T)')
+plt.plot(range(1, T + 1), train_ensemble_errors, label='Training Error')
+plt.plot(range(1, T + 1), test_ensemble_errors, label='Test Error')
+plt.xlabel('Iteration')
 plt.ylabel('Error Rate')
-plt.title('AdaBoost Performance')
+plt.title('AdaBoost Ensemble Performance')
 plt.legend()
 
+# Second figure: training and test errors of all decision stumps
 plt.subplot(1, 2, 2)
-plt.plot(range(1, T + 1), stump_errors)
+plt.plot(range(1, T + 1), unweighted_train_errors, label='Unweighted Training Stump Error')
+plt.plot(range(1, T + 1), test_errors, label='Test Stump Error')
 plt.xlabel('Iteration')
-plt.ylabel('Stump Error')
-plt.title('Decision Stump Errors')
+plt.ylabel('Error Rate')
+plt.title('Individual Decision Stump Errors')
+plt.legend()
 
+plt.tight_layout()
+plt.show()
+
+# Optional: Plot weighted training errors
+plt.figure(figsize=(6, 4))
+plt.plot(range(1, T + 1), weighted_train_errors, label='Weighted Training Stump Error')
+plt.xlabel('Iteration')
+plt.ylabel('Weighted Error Rate')
+plt.title('Weighted Training Errors of Decision Stumps')
+plt.legend()
 plt.tight_layout()
 plt.show()
