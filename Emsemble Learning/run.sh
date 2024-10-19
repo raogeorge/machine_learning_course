@@ -1,9 +1,27 @@
 #!/bin/bash
-echo "Part 2 Q2 on the car dataset"
-python3 Decision_tree_practice_Q2.py
+echo "Q2 (a)"
+python3 adaboosting.py
 
-echo "Part 2 Q3(a) on the car dataset"
-python3 Decision_tree_practice_Q3.py
+echo "Q2 (b)"
+python3 Bagging.py
 
-echo "Part 2 Q3(b) on the car dataset"
-python3 Decision_tree_practice_Q3(b).py
+echo "Q2(c)"
+python3 Bagging vs single tree.py
+
+echo "Q2 (d)"
+python3 random forest.py
+
+echo "Q2 (e)"
+python3 Bagging vs single tree.py
+
+echo "Q3"
+python3 credit_default.py
+
+echo "Q4 (a)"
+python3 Q4(a).py
+
+echo "Q4 (b)"
+python3 Q4(b).py
+
+echo "Q4 (c)"
+python3 Q4(c).py
