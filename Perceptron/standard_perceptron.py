@@ -1,17 +1,13 @@
 import numpy as np
 
 def load_data(filename):
-    # Load data directly as float
     data = np.genfromtxt(filename, delimiter=',')
     
-    # Split into features and labels
     X = data[:, :-1]
     y = data[:, -1]
     
-    # Add bias term
     X_with_bias = np.column_stack([np.ones(len(X)), X])
     
-    # Convert 0/1 labels to -1/1
     y = 2 * y - 1
     
     return X_with_bias, y
