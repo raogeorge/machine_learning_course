@@ -1,22 +1,20 @@
 import numpy as np
 
 def load_data(filename):
-    data = np.genfromtxt(filename, delimiter=',', dtype=str)
+    # Load data directly as float
+    data = np.genfromtxt(filename, delimiter=',')
     
+    # Split into features and labels
     X = data[:, :-1]
     y = data[:, -1]
     
-    X_encoded = np.zeros(X.shape, dtype=float)
-    for i in range(X.shape[1]):
-        try:
-            X_encoded[:, i] = X[:, i].astype(float)
-        except ValueError:
-            unique_values = np.unique(X[:, i])
-            X_encoded[:, i] = np.array([np.where(unique_values == val)[0][0] for val in X[:, i]])
+    # Add bias term
+    X_with_bias = np.column_stack([np.ones(len(X)), X])
     
-    y = (y == 'yes').astype(int) * 2 - 1
+    # Convert 0/1 labels to -1/1
+    y = 2 * y - 1
     
-    return X_encoded, y
+    return X_with_bias, y
 
 def perceptron(X, y, T=10):
     """
