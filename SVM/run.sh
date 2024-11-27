@@ -11,11 +11,8 @@ python3 Q2(c).py
 echo "Q3 (a)"
 python3 Q3(a).py
 
-echo "Q3 (b)"
+echo "Q3 (bc)"
 python3 Q3(b).py
-
-echo "Q3(c)"
-python3 Q3(c).py
 
 echo "Q3(d)"
 python3 Q3(d).py
