@@ -5,3 +5,5 @@ For HW2, two folders "Ensemble Learning" and "Linear Regression" in the same lev
 For HW3, use the run file in the "Perceptron" folder.
 
 For HW4, use the run file in the "SVM" folder to get the result for Q1(a-c) and Q2(a-d)
+
+For HW5, use the run file in the "Neural Networks" folder to get the result for Q1(a-c, e)
